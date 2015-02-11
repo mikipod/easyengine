@@ -32,15 +32,48 @@ function ee_lib_error()
     exit $2
 }
 
+function pkger()
+{
+    which python >> /dev/null
+    if [[ $? -ne 0 ]]; then
+        #trying to install python manually
+        echo Unable to detect OS automatically, please
+        echo select your OS:
+        echo
+        echo 1 = Ubuntu
+        echo 2 = CentOS / RedHat
+        echo 3 = Mac OS -- verify Homebrew is installed: http://brew.sh )
+        echo
+        echo 
+        echo -n "==> [1] "
+        read -n 1 os_select
+        case $os_select in
+            2)
+                pkger = `which yum`
+                ;;
+            3)
+                pkger = `which brew`
+                ;;
+        esac
+    else
+        python -mplatform | grep -i CentOS && pkger=`which yum`
+        python -mplatform | grep -i Darwin && pkger=`which brew`
+    fi
+    if [ -z $pkger ]; then
+        echo Using \"apt-get\" packeger . . .
+        pkger = `which apt-get`
+    fi
+}
+
 function install_dep()
 {
-    # Execute: apt-get update
-    ee_lib_echo "Executing apt-get update"
-    apt-get update &>> /dev/null
+    # Execute: package manager update
+    ee_lib_echo "Executing $pkger update"
+    $pkger update &>> /dev/null
 
     # Install Python3 on users system
     ee_lib_echo "Installing pre depedencies"
-    apt-get -y install python3 python3-apt python3-setuptools python3-dev sqlite3 git
+    $pkger -y install python3 python3-apt python3-setuptools python3-dev sqlite3 git
     if [[ $? -ne 0 ]]; then
         ee_lib_echo_fail "Unable to install pre depedencies"
         exit 1
